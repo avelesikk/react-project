@@ -58,6 +58,25 @@ function AppContent() {
       .catch(() => setCatalogProducts([]));
   }, []);
 
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === '/') document.title = 'Главная';
+    else if (path === '/katalog') document.title = 'Каталог';
+    else if (path.startsWith('/katalog/')) document.title = 'Карточка товара';
+    else if (path === '/about') document.title = 'О компании';
+    else if (path === '/contact') document.title = 'Контакты';
+    else if (path === '/cart') document.title = 'Корзина';
+    else if (path === '/favorites') document.title = 'Избранное';
+    else if (path === '/auth') document.title = 'Вход и регистрация';
+    else if (path === '/account') document.title = 'Личный кабинет';
+    else if (path === '/privacy-policy') document.title = 'Политика конфиденциальности';
+    else if (path === '/admin') document.title = 'Админ вход';
+    else if (path === '/admin/panel') document.title = 'Админ панель';
+    else if (path.startsWith('/admin/panel/add')) document.title = 'Добавление товара';
+    else if (path.startsWith('/admin/panel/edit/')) document.title = 'Редактирование товара';
+    else document.title = 'Страница не найдена';
+  }, [location.pathname]);
+
   const availableIds = useMemo(() => {
     const ids = new Set();
     HOME_PRODUCTS.forEach((item) => ids.add(item.id));

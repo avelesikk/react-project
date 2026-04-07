@@ -5,7 +5,7 @@ export default function ContactPage() {
   useEffect(() => {
     const mapRoot = document.getElementById('yandex-map');
     if (!mapRoot) return;
-    const mapHeight = window.innerWidth <= 480 ? 240 : window.innerWidth <= 768 ? 280 : 360;
+    const mapHeight = window.innerWidth <= 480 ? 240 : window.innerWidth <= 768 ? 280 : 400;
 
     mapRoot.innerHTML = '';
     const script = document.createElement('script');
