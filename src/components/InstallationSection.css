@@ -1,0 +1,93 @@
+.installation-section {
+  padding: 14px 0 38px;
+  background: #fff;
+}
+
+.installation-section__container {
+  padding: 34px;
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(320px, 1fr);
+  gap: 30px;
+  align-items: center;
+}
+
+.installation-section__text h2 {
+  margin: 0 0 10px;
+  font-size: 30px;
+  line-height: 1.1;
+  color: #0b3a64;
+}
+
+.installation-section__text p {
+  margin: 0 0 18px;
+  color: #2b3a55;
+  line-height: 1.6;
+}
+
+.installation-section__text ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.installation-section__text li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: #0f1f35;
+}
+
+.installation-section__text li span {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.installation-section__image-wrap {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(11, 58, 100, 0.12);
+}
+
+.installation-section__image-wrap img {
+  width: 100%;
+  display: block;
+  height: 100%;
+  max-height: 430px;
+  object-fit: cover;
+}
+
+@media (max-width: 992px) {
+  .installation-section__container {
+    grid-template-columns: 1fr;
+  }
+
+  .installation-section__text h2 {
+    font-size: 30px;
+  }
+}
+
+@media (max-width: 640px) {
+  .installation-section {
+    padding: 10px 0 24px;
+  }
+
+  .installation-section__container {
+    border-radius: 14px;
+    padding: 18px;
+  }
+
+  .installation-section__text h2 {
+    font-size: 28px;
+  }
+}

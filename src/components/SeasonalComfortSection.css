@@ -1,0 +1,137 @@
+.seasonal-comfort {
+  padding: 36px 0 34px;
+  background: #fff;
+}
+
+.seasonal-comfort__container {
+  padding: 34px;
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(280px, 420px);
+  gap: 30px;
+  align-items: center;
+}
+
+
+.seasonal-comfort__content h2 {
+  margin: 0 0 10px;
+  font-size: 30px;
+  line-height: 1.1;
+  color: #0b3a64;
+}
+
+.seasonal-comfort__content p {
+  margin: 0 0 18px;
+  color: #2b3a55;
+  line-height: 1.6;
+}
+
+.seasonal-comfort__content ul {
+  margin: 0 0 24px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.seasonal-comfort__content li {
+  color: #0f1f35;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.seasonal-comfort__content li span {
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.seasonal-comfort__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border-radius: 12px;
+  background: #3b82f6;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+  padding: 0 24px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.seasonal-comfort__btn:hover {
+  background: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.28);
+}
+
+.seasonal-comfort__grid {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.seasonal-card {
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid rgba(11, 58, 100, 0.08);
+  padding: 14px 12px;
+  text-align: center;
+}
+
+.seasonal-card__icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.seasonal-card h3 {
+  margin: 8px 0 5px;
+  font-size: 14px;
+  color: #0b3a64;
+}
+
+.seasonal-card p {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: #3b82f6;
+}
+
+@media (max-width: 992px) {
+  .seasonal-comfort__container {
+    grid-template-columns: 1fr;
+  }
+
+  .seasonal-comfort__content h2 {
+    font-size: 30px;
+  }
+}
+
+@media (max-width: 640px) {
+  .seasonal-comfort {
+    padding: 20px 0 24px;
+  }
+
+  .seasonal-comfort__container {
+    padding: 18px;
+    border-radius: 14px;
+  }
+
+  .seasonal-comfort__content h2 {
+    font-size: 28px;
+  }
+
+  .seasonal-card p {
+    font-size: 17px;
+  }
+}
