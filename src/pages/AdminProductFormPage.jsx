@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { createProduct, getProductById, updateProduct } from '../api/productsApi';
-import { isAdminSessionActive } from '../utils/adminSession';
 import './AdminPanelPage.css';
 
-export default function AdminProductFormPage() {
+export default function AdminProductFormPage({ userSession }) {
   const { productId } = useParams();
   const navigate = useNavigate();
   const isEdit = Boolean(productId);
-  const isAdminLoggedIn = isAdminSessionActive();
+  const isAdminLoggedIn = Boolean(userSession?.token) && String(userSession?.user?.role || '') === 'admin';
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState({
@@ -40,7 +39,7 @@ export default function AdminProductFormPage() {
       .catch(() => setError('Не удалось загрузить товар для редактирования.'));
   }, [isEdit, productId]);
 
-  if (!isAdminLoggedIn) return <Navigate to="/admin" replace />;
+  if (!isAdminLoggedIn) return <Navigate to="/auth" replace />;
 
   const onSubmit = async (e) => {
     e.preventDefault();

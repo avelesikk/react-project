@@ -28,7 +28,10 @@ export default function AuthPage({ userSession, onLogin }) {
   const [registerErrors, setRegisterErrors] = useState({});
   const [hasRegisterAttemptedSubmit, setHasRegisterAttemptedSubmit] = useState(false);
 
-  if (userSession?.token) return <Navigate to="/account" replace />;
+  if (userSession?.token) {
+    const adminTarget = String(userSession?.user?.role || '') === 'admin' ? '/admin/panel' : '/account';
+    return <Navigate to={adminTarget} replace />;
+  }
 
   const formatPhone = (rawValue) => {
     const digits = String(rawValue || '').replace(/\D/g, '');
@@ -110,7 +113,8 @@ export default function AuthPage({ userSession, onLogin }) {
         password: loginForm.password,
       });
       onLogin?.({ token: data.token, user: data.user, expires_at: data.expires_at });
-      navigate('/account');
+      const adminTarget = String(data?.user?.role || '') === 'admin' ? '/admin/panel' : '/account';
+      navigate(adminTarget);
     } catch (err) {
       setError(err.message || 'Не удалось выполнить вход.');
     } finally {
@@ -298,7 +302,6 @@ export default function AuthPage({ userSession, onLogin }) {
                   id="reg-pass"
                   value={registerForm.password}
                   onChange={(e) => updateRegisterField('password', e.target.value)}
-                  type="password"
                   autoComplete="new-password"
                   placeholder="Введите пароль"
                   inputMode="numeric"

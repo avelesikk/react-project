@@ -105,6 +105,7 @@ function sanitizeUser(row) {
     age: row.age,
     phone_number: row.phone_number,
     email: row.email,
+    role: row.role || 'user',
     full_name: fullName(row),
   };
 }
@@ -126,6 +127,7 @@ async function resolveSessionUser(req, res, next) {
     [rows] = await pool.execute(
       `
         SELECT id, first_name, name, last_name, age, phone_number, email
+        , role
         FROM klient
         WHERE id = ?
         LIMIT 1
@@ -139,6 +141,7 @@ async function resolveSessionUser(req, res, next) {
       [rows] = await pool.execute(
         `
           SELECT id, first_name, name, last_name, age, phone_number, email
+          , role
           FROM klient
           WHERE id = ? OR email = ?
           LIMIT 1
@@ -149,6 +152,7 @@ async function resolveSessionUser(req, res, next) {
       [rows] = await pool.execute(
         `
           SELECT id, first_name, name, last_name, age, phone_number, email
+          , role
           FROM klient
           WHERE id = ?
           LIMIT 1
@@ -159,6 +163,7 @@ async function resolveSessionUser(req, res, next) {
       [rows] = await pool.execute(
         `
           SELECT id, first_name, name, last_name, age, phone_number, email
+          , role
           FROM klient
           WHERE email = ?
           LIMIT 1
@@ -236,8 +241,8 @@ router.post('/register', async (req, res) => {
     const passwordHash = hashPassword(password);
     await pool.execute(
       `
-        INSERT INTO klient (first_name, name, last_name, age, phone_number, email, password)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO klient (first_name, name, last_name, age, phone_number, email, password, role)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'user')
       `,
       [firstName, middleName || '', lastName, age, phone, email, passwordHash]
     );
@@ -268,7 +273,7 @@ router.post('/login', async (req, res) => {
 
     const [rows] = await pool.execute(
       `
-        SELECT id, first_name, name, last_name, age, phone_number, email, password
+        SELECT id, first_name, name, last_name, age, phone_number, email, password, role
         FROM klient
         WHERE email = ?
         LIMIT 1
@@ -314,13 +319,21 @@ router.post('/orders', resolveSessionUser, async (req, res) => {
       return res.status(400).json({ message: 'Некорректная сумма заказа.' });
     }
     const booking = req.body?.booking || {};
-    const deliveryType = String(booking?.delivery_type || '').trim();
+    const deliveryType = String(booking?.delivery_type || '').trim().toLowerCase();
     const address = String(booking?.address || '').trim();
+    const pickupPoint = String(booking?.pickup_point || '').trim();
+    const deliveryCity = String(booking?.city || '').trim();
+    if (!['delivery', 'pickup'].includes(deliveryType)) {
+      return res.status(400).json({ message: 'Некорректный способ получения заказа.' });
+    }
     if (deliveryType === 'delivery') {
       if (!address) return res.status(400).json({ message: 'Укажите адрес доставки.' });
       if (!/[A-Za-zА-Яа-яЁё]/.test(address)) {
         return res.status(400).json({ message: 'Адрес должен содержать буквы и номер дома.' });
       }
+    }
+    if (deliveryType === 'pickup' && !pickupPoint) {
+      return res.status(400).json({ message: 'Укажите пункт самовывоза.' });
     }
 
     const normalized = items
@@ -335,8 +348,28 @@ router.post('/orders', resolveSessionUser, async (req, res) => {
     if (!normalized.length) return res.status(400).json({ message: 'В заказе нет валидных товаров.' });
 
     const [result] = await pool.execute(
-      `INSERT INTO orders (user_id, items_json, total_price, status) VALUES (?, ?, ?, 'new')`,
-      [req.authUser.id, JSON.stringify(normalized), Math.round(totalPrice)]
+      `
+        INSERT INTO orders (
+          user_id,
+          items_json,
+          total_price,
+          status,
+          delivery_type,
+          delivery_address,
+          pickup_point,
+          delivery_city
+        )
+        VALUES (?, ?, ?, 'new', ?, ?, ?, ?)
+      `,
+      [
+        req.authUser.id,
+        JSON.stringify(normalized),
+        Math.round(totalPrice),
+        deliveryType,
+        deliveryType === 'delivery' ? address : '',
+        deliveryType === 'pickup' ? pickupPoint : '',
+        deliveryCity,
+      ]
     );
 
     return res.status(201).json({

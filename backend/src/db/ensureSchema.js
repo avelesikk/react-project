@@ -1,4 +1,13 @@
+const crypto = require('crypto');
 const pool = require('./pool');
+const ADMIN_EMAIL = 'milka@mail.ru';
+const ADMIN_PASSWORD = '148888';
+
+function createSeedPasswordHash(password) {
+  const salt = 'seed-admin-salt';
+  const derived = crypto.scryptSync(password, salt, 64).toString('hex');
+  return `${salt}:${derived}`;
+}
 
 async function columnExists(tableName, columnName) {
   const [rows] = await pool.execute(
@@ -132,11 +141,16 @@ async function ensureSchema() {
       phone_number VARCHAR(40) NOT NULL,
       email VARCHAR(190) NOT NULL,
       password VARCHAR(255) NOT NULL,
+      role ENUM('user','admin') NOT NULL DEFAULT 'user',
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (id),
       UNIQUE KEY uq_klient_email (email)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
+  if (!(await columnExists('klient', 'role'))) {
+    await pool.execute(`ALTER TABLE klient ADD COLUMN role ENUM('user','admin') NOT NULL DEFAULT 'user'`);
+  }
+  await pool.execute(`UPDATE klient SET role = 'user' WHERE role IS NULL OR role = ''`);
 
   const [usersRows] = await pool.execute(`SELECT id, phone_number FROM klient ORDER BY id ASC`);
   const keepByPhoneDigits = new Map();
@@ -164,6 +178,33 @@ async function ensureSchema() {
     await pool.execute(`ALTER TABLE klient ADD UNIQUE KEY uq_klient_phone_number (phone_number)`);
   }
 
+  const adminPasswordHash = createSeedPasswordHash(ADMIN_PASSWORD);
+  const adminPhone = normalizePhone('79009999999');
+  const [adminRows] = await pool.execute(`SELECT id FROM klient WHERE email = ? LIMIT 1`, [ADMIN_EMAIL]);
+  if (adminRows[0]) {
+    await pool.execute(
+      `
+        UPDATE klient
+        SET role = 'admin',
+            password = ?,
+            first_name = 'admin',
+            name = '',
+            last_name = '',
+            phone_number = ?
+        WHERE id = ?
+      `,
+      [adminPasswordHash, adminPhone, adminRows[0].id]
+    );
+  } else {
+    await pool.execute(
+      `
+        INSERT INTO klient (first_name, name, last_name, age, phone_number, email, password, role)
+        VALUES ('admin', '', '', '2006-22-08', ?, ?, ?, 'admin')
+      `,
+      [adminPhone, ADMIN_EMAIL, adminPasswordHash]
+    );
+  }
+
   await pool.execute(`DROP TABLE IF EXISTS klient_sessions`);
   await pool.execute(`DROP TABLE IF EXISTS user_sessions`);
 
@@ -174,6 +215,10 @@ async function ensureSchema() {
       items_json LONGTEXT NOT NULL,
       total_price INT NOT NULL,
       status ENUM('new','processing','completed','cancelled') NOT NULL DEFAULT 'new',
+      delivery_type ENUM('delivery','pickup') NOT NULL DEFAULT 'delivery',
+      delivery_address VARCHAR(255) NOT NULL DEFAULT '',
+      pickup_point VARCHAR(255) NOT NULL DEFAULT '',
+      delivery_city VARCHAR(120) NOT NULL DEFAULT '',
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (id),
       INDEX idx_orders_user_id (user_id),
@@ -184,6 +229,27 @@ async function ensureSchema() {
     ALTER TABLE orders
     MODIFY COLUMN status ENUM('new','processing','completed','cancelled') NOT NULL DEFAULT 'new'
   `);
+  if (!(await columnExists('orders', 'delivery_type'))) {
+    await pool.execute(
+      `ALTER TABLE orders ADD COLUMN delivery_type ENUM('delivery','pickup') NOT NULL DEFAULT 'delivery'`
+    );
+  }
+  if (!(await columnExists('orders', 'delivery_address'))) {
+    await pool.execute(`ALTER TABLE orders ADD COLUMN delivery_address VARCHAR(255) NOT NULL DEFAULT ''`);
+  }
+  if (!(await columnExists('orders', 'pickup_point'))) {
+    await pool.execute(`ALTER TABLE orders ADD COLUMN pickup_point VARCHAR(255) NOT NULL DEFAULT ''`);
+  }
+  if (!(await columnExists('orders', 'delivery_city'))) {
+    await pool.execute(`ALTER TABLE orders ADD COLUMN delivery_city VARCHAR(120) NOT NULL DEFAULT ''`);
+  }
+  await pool.execute(`
+    ALTER TABLE orders
+    MODIFY COLUMN delivery_type ENUM('delivery','pickup') NOT NULL DEFAULT 'delivery'
+  `);
+  await pool.execute(`UPDATE orders SET delivery_address = '' WHERE delivery_address IS NULL`);
+  await pool.execute(`UPDATE orders SET pickup_point = '' WHERE pickup_point IS NULL`);
+  await pool.execute(`UPDATE orders SET delivery_city = '' WHERE delivery_city IS NULL`);
 }
 
 module.exports = ensureSchema;

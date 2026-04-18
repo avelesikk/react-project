@@ -162,7 +162,12 @@
   position: relative;
   z-index: 1001;
 }
-
+@media (max-width: 1025px){
+.header-nav-desktop ul {
+  display: flex;
+  gap: 15px;
+}
+}
 @media (max-width: 768px) {
   .header-container {
     padding: 12px 0;

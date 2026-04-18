@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import './Header.css';
 
-export default function Header({ favoritesCount = 0, cartCount = 0, isLoggedIn = false }) {
+export default function Header({ favoritesCount = 0, cartCount = 0, isLoggedIn = false, isAdmin = false }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navRef = useRef(null);
   const burgerRef = useRef(null);
@@ -71,7 +71,12 @@ export default function Header({ favoritesCount = 0, cartCount = 0, isLoggedIn =
             {cartCount > 0 ? <span className="header-badge">{cartCount}</span> : null}
           </Link>
 
-          <Link to={isLoggedIn ? '/account' : '/auth'} className="cart-link icon-link" aria-label="Войти" onClick={closeMenu}>
+          <Link
+            to={isLoggedIn ? (isAdmin ? '/admin/panel' : '/account') : '/auth'}
+            className="cart-link icon-link"
+            aria-label="Войти"
+            onClick={closeMenu}
+          >
             <img className="header-icon-img" src="/img/icon-user.png" alt="" />
           </Link>
         </div>
@@ -92,7 +97,12 @@ export default function Header({ favoritesCount = 0, cartCount = 0, isLoggedIn =
             {cartCount > 0 ? <span className="header-badge">{cartCount}</span> : null}
           </Link>
 
-          <Link to={isLoggedIn ? '/account' : '/auth'} className="cart-link icon-link" aria-label="Войти" onClick={closeMenu}>
+          <Link
+            to={isLoggedIn ? (isAdmin ? '/admin/panel' : '/account') : '/auth'}
+            className="cart-link icon-link"
+            aria-label="Войти"
+            onClick={closeMenu}
+          >
             <img className="header-icon-img" src="/img/icon-user.png" alt="" />
           </Link>
         </div>

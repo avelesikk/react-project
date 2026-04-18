@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import CookieBanner from './components/CookieBanner';
@@ -10,7 +10,6 @@ import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import HomePage from './pages/HomePage';
 import FavoritesPage from './pages/FavoritesPage';
-import AdminLoginPage from './pages/AdminLoginPage';
 import AdminPanelPage from './pages/AdminPanelPage';
 import AdminProductFormPage from './pages/AdminProductFormPage';
 import ProductPage from './pages/ProductPage';
@@ -37,7 +36,6 @@ function readStorageArray(key) {
 
 function AppContent() {
   const location = useLocation();
-  const isAdminRoute = location.pathname.startsWith('/admin');
   const [favoriteIds, setFavoriteIds] = useState(() => readStorageArray(FAVORITES_STORAGE_KEY));
   const [cartItems, setCartItems] = useState(() => readStorageArray(CART_STORAGE_KEY));
   const [catalogProducts, setCatalogProducts] = useState([]);
@@ -145,7 +143,12 @@ function AppContent() {
 
   return (
     <div className="app-shell">
-      {!isAdminRoute ? <Header favoritesCount={favoritesCount} cartCount={cartCount} isLoggedIn={isLoggedIn} /> : null}
+      <Header
+        favoritesCount={favoritesCount}
+        cartCount={cartCount}
+        isLoggedIn={isLoggedIn}
+        isAdmin={String(userSession?.user?.role || '') === 'admin'}
+      />
       <main className="app-main">
         <Routes>
           <Route
@@ -223,10 +226,21 @@ function AppContent() {
               />
             }
           />
-          <Route path="/admin" element={<AdminLoginPage />} />
-          <Route path="/admin/panel" element={<AdminPanelPage />} />
-          <Route path="/admin/panel/add" element={<AdminProductFormPage />} />
-          <Route path="/admin/panel/edit/:productId" element={<AdminProductFormPage />} />
+          <Route path="/admin" element={<Navigate to="/auth" replace />} />
+          <Route
+            path="/admin/panel"
+            element={
+              <AdminPanelPage
+                userSession={userSession}
+                onUserLogout={() => {
+                  clearUserSession();
+                  setUserSession(null);
+                }}
+              />
+            }
+          />
+          <Route path="/admin/panel/add" element={<AdminProductFormPage userSession={userSession} />} />
+          <Route path="/admin/panel/edit/:productId" element={<AdminProductFormPage userSession={userSession} />} />
           <Route
             path="/favorites"
             element={
@@ -242,8 +256,8 @@ function AppContent() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
-      {!isAdminRoute ? <Footer /> : null}
-      {!isAdminRoute ? <CookieBanner /> : null}
+      <Footer />
+      <CookieBanner />
     </div>
   );
 }

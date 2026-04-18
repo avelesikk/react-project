@@ -237,3 +237,17 @@
     grid-template-columns: 1fr;
   }
 }
+@media (max-width: 426px) {
+.auth-box {
+  max-width: 380px;
+}
+.auth-tab.active::after{
+  left: 1px;
+  right: 1px;
+}
+}
+@media (max-width: 380px) {
+  .auth-box {
+    max-width: 290px;
+  }
+}

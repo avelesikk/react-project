@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { getAdminOrders, updateAdminOrderStatus } from '../api/adminApi';
 import { deleteProduct, getProducts } from '../api/productsApi';
 import { formatPrice } from '../data/products';
-import { clearAdminSession, getAdminUser, isAdminSessionActive } from '../utils/adminSession';
 import './AdminPanelPage.css';
 
 const ORDER_STATUS_LABEL = {
@@ -19,40 +18,69 @@ function formatOrderDate(value) {
   return date.toLocaleDateString('ru-RU');
 }
 
-export default function AdminPanelPage() {
-  const isAdminLoggedIn = isAdminSessionActive();
-  const adminUser = getAdminUser();
+function getOrderDeliveryInfo(order) {
+  const booking = order?.booking || {};
+  const deliveryType = String(
+    order?.delivery_type || booking?.delivery_type || order?.deliveryType || booking?.deliveryType || ''
+  ).toLowerCase();
+  const city = String(order?.city || booking?.city || '').trim();
+  const address = String(order?.address || booking?.address || '').trim();
+  const pickupPoint = String(order?.pickup_point || booking?.pickup_point || order?.pickupPoint || '').trim();
+
+  if (deliveryType === 'pickup' || pickupPoint) {
+    return {
+      label: 'Самовывоз',
+      details: pickupPoint || 'Пункт не указан',
+    };
+  }
+
+  return {
+    label: 'Доставка',
+    details: [city, address].filter(Boolean).join(', ') || 'Адрес не указан',
+  };
+}
+
+export default function AdminPanelPage({ userSession, onUserLogout }) {
+  const isAdminLoggedIn = Boolean(userSession?.token) && String(userSession?.user?.role || '') === 'admin';
+  const adminUser = userSession?.user?.first_name || 'admin';
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState('');
   const [ordersError, setOrdersError] = useState('');
   const [savingOrderId, setSavingOrderId] = useState(0);
 
-  const loadProducts = () => {
+  const loadProducts = useCallback(() => {
     getProducts()
       .then((items) => setProducts(items))
       .catch(() => setError('Не удалось загрузить карточки.'));
-  };
+  }, []);
 
-  const loadOrders = () => {
-    getAdminOrders()
+  const loadOrders = useCallback(() => {
+    getAdminOrders(userSession)
       .then((data) => setOrders(Array.isArray(data?.orders) ? data.orders : []))
       .catch((e) => setOrdersError(e.message || 'Не удалось загрузить заказы.'));
-  };
+  }, [userSession]);
 
   useEffect(() => {
     if (!isAdminLoggedIn) return;
     loadProducts();
     loadOrders();
-  }, [isAdminLoggedIn]);
+  }, [isAdminLoggedIn, loadOrders, loadProducts]);
 
-  if (!isAdminLoggedIn) return <Navigate to="/admin" replace />;
+  if (!isAdminLoggedIn) return <Navigate to="/auth" replace />;
 
   return (
     <section className="admin-panel-page">
       <div className="admin-container">
         <h1 className="admin-title">Административная панель</h1>
         <p className="admin-welcome">Добро пожаловать, {adminUser}</p>
+        <button
+          type="button"
+          className="admin-link admin-link--button admin-link--underline"
+          onClick={() => onUserLogout?.()}
+        >
+          Выйти
+        </button>
         <p className="admin-subtitle">Карточки товара</p>
         <Link to="/admin/panel/add" className="admin-btn admin-btn--link">
           Добавить
@@ -117,64 +145,61 @@ export default function AdminPanelPage() {
               <span>ID</span>
               <span>Клиент</span>
               <span>Контакты</span>
+              <span>Доставка</span>
               <span>Сумма</span>
               <span>Дата</span>
               <span>Статус</span>
             </div>
-            {orders.map((order) => (
-              <article key={order.id} className="admin-order-row">
-                <div>#{order.id}</div>
-                <div>{order.customer_name || '-'}</div>
-                <div className="admin-order-contacts">
-                  <span>{order.customer_email || '-'}</span>
-                  <span>{order.customer_phone || '-'}</span>
-                </div>
-                <div>{formatPrice(order.total_price || 0)}</div>
-                <div>{formatOrderDate(order.created_at)}</div>
-                <div className="admin-order-status">
-                  <select
-                    value={order.status}
-                    disabled={savingOrderId === order.id}
-                    onChange={async (e) => {
-                      const nextStatus = e.target.value;
-                      try {
-                        setSavingOrderId(order.id);
-                        setOrdersError('');
-                        await updateAdminOrderStatus(order.id, nextStatus);
-                        setOrders((prev) =>
-                          prev.map((item) => (item.id === order.id ? { ...item, status: nextStatus } : item))
-                        );
-                      } catch (err) {
-                        setOrdersError(err.message || 'Не удалось обновить статус.');
-                      } finally {
-                        setSavingOrderId(0);
-                      }
-                    }}
-                  >
-                    {Object.entries(ORDER_STATUS_LABEL).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </article>
-            ))}
+            {orders.map((order) => {
+              const delivery = getOrderDeliveryInfo(order);
+              return (
+                <article key={order.id} className="admin-order-row">
+                  <div>{order.id}</div>
+                  <div>{order.customer_name || '-'}</div>
+                  <div className="admin-order-contacts">
+                    <span>{order.customer_email || '-'}</span>
+                    <span>{order.customer_phone || '-'}</span>
+                  </div>
+                  <div className="admin-order-delivery">
+                    <p className="admin-order-delivery-label">{delivery.label}</p>
+                    <p className="admin-order-delivery-details">{delivery.details}</p>
+                  </div>
+                  <div>{formatPrice(order.total_price || 0)}</div>
+                  <div>{formatOrderDate(order.created_at)}</div>
+                  <div className="admin-order-status">
+                    <select
+                      value={order.status}
+                      disabled={savingOrderId === order.id}
+                      onChange={async (e) => {
+                        const nextStatus = e.target.value;
+                        try {
+                          setSavingOrderId(order.id);
+                          setOrdersError('');
+                        await updateAdminOrderStatus(userSession, order.id, nextStatus);
+                          setOrders((prev) =>
+                            prev.map((item) => (item.id === order.id ? { ...item, status: nextStatus } : item))
+                          );
+                        } catch (err) {
+                          setOrdersError(err.message || 'Не удалось обновить статус.');
+                        } finally {
+                          setSavingOrderId(0);
+                        }
+                      }}
+                    >
+                      {Object.entries(ORDER_STATUS_LABEL).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         ) : (
           <p>Заказов пока нет</p>
         )}
-
-        <button
-          type="button"
-          className="admin-link admin-link--button admin-link--underline"
-          onClick={() => {
-            clearAdminSession();
-            window.location.href = '/admin';
-          }}
-        >
-          Выйти
-        </button>
       </div>
     </section>
   );
